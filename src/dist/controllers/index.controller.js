@@ -14,12 +14,17 @@ const getIndex = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const totalCategories = 0;
         const totalNotes = 0;
+        const totalUsers = 0;
         res.json({
             name: "Notes API",
             version: process.env.npm_package_version || "1.0.0",
             status: "operational",
             documentation: "/api-docs",
             endpoints: {},
+            users: {
+                path: "/api/users",
+                methods: ["GET", "POST"]
+            },
             categories: {
                 path: "/api/categories",
                 methods: ["GET", "POST"]
@@ -30,7 +35,8 @@ const getIndex = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             },
             statistics: {
                 totalNotes,
-                totalCategories
+                totalCategories,
+                totalUsers
             },
             timestamps: {
                 server: new Date(),

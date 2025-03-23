@@ -8,7 +8,7 @@ const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
 const logging_middleware_1 = require("./middlewares/logging.middleware");
-const user_route_1 = __importDefault(require("./routes/user.route"));
+const auth_route_1 = __importDefault(require("./routes/auth.route"));
 const note_route_1 = __importDefault(require("./routes/note.route"));
 const index_route_1 = __importDefault(require("./routes/index.route"));
 const category_route_1 = __importDefault(require("./routes/category.route"));
@@ -32,9 +32,9 @@ app.use(express_1.default.urlencoded({ extended: true }));
 app.use('/', index_route_1.default);
 app.use("/api/notes", note_route_1.default);
 app.use('/api/categories', category_route_1.default);
-app.use("/api/user", user_route_1.default);
-// Global Error Handling Middleware
-app.use((req, res, next) => {
+app.use("/api/users", auth_route_1.default);
+// Global Route Error Handling 
+app.all('*', (req, res, next) => {
     next(new errorHandler_1.NotFoundError(`Cannot find ${req.originalUrl} on this server`));
 });
 app.use((err, req, res, next) => {

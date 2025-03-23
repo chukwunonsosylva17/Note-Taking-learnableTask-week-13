@@ -8,44 +8,55 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteNote = exports.updateNote = exports.createNote = exports.getNotesByCategoryHandler = exports.getNote = exports.getNotes = void 0;
 const note_service_1 = require("../services/note.service");
-/**
- * Utility function for sending error responses
- */
-const sendErrorResponse = (res, status, message) => {
-    return res.status(status).json({ success: false, message });
-};
-/**
- * Wrapper to handle async route functions & pass errors to next()
- */
-const handleRequest = (fn) => {
-    return (req, res, next) => {
-        fn(req, res, next).catch(next);
-    };
+const note_model_1 = __importDefault(require("../models/note.model"));
+const sendErrorResponse = (res, { status, message }) => res.status(status).json({ success: false, message });
+const handleRequest = (fn) => (req, res, next) => {
+    fn(req, res, next).catch(next);
 };
 /**
  * Get all notes for the authenticated user
  */
-exports.getNotes = handleRequest((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    if (!req.user || !req.user._id)
-        return sendErrorResponse(res, 401, "Unauthorized");
-    const notes = yield (0, note_service_1.getAllNotes)(req.user._id);
-    return res.status(200).json({ success: true, notes });
-}));
+const getNotes = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        if (!req.user || !req.user._id) {
+            sendErrorResponse(res, { status: 401, message: "Unauthorized" });
+            return;
+        }
+        if (!req.user.userId) {
+            sendErrorResponse(res, { status: 500, message: "User ID is missing" });
+            return;
+        }
+        const notes = yield note_model_1.default.find({ user: req.user.userId });
+        if (!notes) {
+            sendErrorResponse(res, { status: 404, message: "No notes found" });
+            return;
+        }
+        res.status(200).json(notes);
+        next();
+    }
+    catch (error) {
+        next(error);
+    }
+});
+exports.getNotes = getNotes;
 /**
  * Get a single note by ID
  */
 exports.getNote = handleRequest((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     if (!req.user || !req.user._id)
-        return sendErrorResponse(res, 401, "Unauthorized");
+        return sendErrorResponse(res, { status: 401, message: "Unauthorized" });
     const noteId = req.params.id;
     if (!noteId)
-        return sendErrorResponse(res, 400, "Note ID is required");
+        return sendErrorResponse(res, { status: 400, message: "Note ID is required" });
     const note = yield (0, note_service_1.getNoteById)(noteId, req.user._id);
     if (!note)
-        return sendErrorResponse(res, 404, "Note not found");
+        return sendErrorResponse(res, { status: 404, message: "Note not found" });
     return res.status(200).json({ success: true, note });
 }));
 /**
@@ -53,10 +64,10 @@ exports.getNote = handleRequest((req, res) => __awaiter(void 0, void 0, void 0, 
  */
 exports.getNotesByCategoryHandler = handleRequest((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     if (!req.user || !req.user._id)
-        return sendErrorResponse(res, 401, "Unauthorized");
+        return sendErrorResponse(res, { status: 401, message: "Unauthorized" });
     const categoryId = req.params.categoryId;
     if (!categoryId)
-        return sendErrorResponse(res, 400, "Category ID is required");
+        return sendErrorResponse(res, { status: 400, message: "Category ID is required" });
     const notes = yield (0, note_service_1.getNotesByCategory)(categoryId, req.user._id);
     return res.status(200).json({ success: true, notes });
 }));
@@ -65,10 +76,10 @@ exports.getNotesByCategoryHandler = handleRequest((req, res) => __awaiter(void 0
  */
 exports.createNote = handleRequest((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     if (!req.user || !req.user._id)
-        return sendErrorResponse(res, 401, "Unauthorized");
+        return sendErrorResponse(res, { status: 401, message: "Unauthorized" });
     const { title, content, category } = req.body;
-    if (!title || !content)
-        return sendErrorResponse(res, 400, "Title and content are required");
+    if (!title || !content || !category)
+        return sendErrorResponse(res, { status: 400, message: "Title, content, and category are required" });
     const newNote = yield (0, note_service_1.createNewNote)(title, content, category, req.user._id);
     return res.status(201).json({ success: true, note: newNote });
 }));
@@ -77,16 +88,16 @@ exports.createNote = handleRequest((req, res) => __awaiter(void 0, void 0, void 
  */
 exports.updateNote = handleRequest((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     if (!req.user || !req.user._id)
-        return sendErrorResponse(res, 401, "Unauthorized");
+        return sendErrorResponse(res, { status: 401, message: "Unauthorized" });
     const noteId = req.params.id;
     if (!noteId)
-        return sendErrorResponse(res, 400, "Note ID is required");
+        return sendErrorResponse(res, { status: 400, message: "Note ID is required" });
     const { title, content, category } = req.body;
     if (!title && !content && !category)
-        return sendErrorResponse(res, 400, "At least one field is required for update");
+        return sendErrorResponse(res, { status: 400, message: "At least one field is required for update" });
     const updatedNote = yield (0, note_service_1.updateExistingNote)(noteId, req.user._id, title, content, category);
     if (!updatedNote)
-        return sendErrorResponse(res, 404, "Note not found or unauthorized");
+        return sendErrorResponse(res, { status: 404, message: "Note not found or unauthorized" });
     return res.status(200).json({ success: true, note: updatedNote });
 }));
 /**
@@ -94,13 +105,13 @@ exports.updateNote = handleRequest((req, res) => __awaiter(void 0, void 0, void 
  */
 exports.deleteNote = handleRequest((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     if (!req.user || !req.user._id)
-        return sendErrorResponse(res, 401, "Unauthorized");
+        return sendErrorResponse(res, { status: 401, message: "Unauthorized" });
     const noteId = req.params.id;
     if (!noteId)
-        return sendErrorResponse(res, 400, "Note ID is required");
+        return sendErrorResponse(res, { status: 400, message: "Note ID is required" });
     const deletedNote = yield (0, note_service_1.deleteNoteById)(noteId, req.user._id);
     if (!deletedNote)
-        return sendErrorResponse(res, 404, "Note not found or unauthorized");
+        return sendErrorResponse(res, { status: 404, message: "Note not found or unauthorized" });
     return res
         .status(200)
         .json({ success: true, message: "Note deleted successfully" });
